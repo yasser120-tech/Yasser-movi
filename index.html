@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YASSER TECH TV - Admin Panel</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Poppins',sans-serif;}
+body{background:#000;color:#fff;min-height:100vh;}
+header{padding:20px;text-align:center;background:#111;}
+header h1{color:#ffc800;}
+.container{padding:20px;}
+.login-box, .admin-box{max-width:600px;margin:40px auto;padding:20px;background:#111;border-radius:15px;}
+input, button{padding:12px; margin:10px 0; width:100%; border-radius:10px; border:none; outline:none; font-size:1rem;}
+button{background:#ffc800;color:#000;font-weight:bold;cursor:pointer;transition:.3s;}
+button:hover{background:#ffb800;}
+table{width:100%;border-collapse:collapse;margin-top:20px;}
+th, td{border:1px solid #444;padding:10px;text-align:left;}
+th{background:#222;}
+td a{color:#ffc800;text-decoration:none;}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>YASSER TECH TV - Admin Panel</h1>
+</header>
+
+<div class="container">
+
+  <!-- Login Box -->
+  <div class="login-box" id="loginBox">
+    <h2>Admin Login</h2>
+    <input type="email" id="adminEmail" placeholder="Email">
+    <input type="password" id="adminPassword" placeholder="Password">
+    <button onclick="loginAdmin()">Login</button>
+    <button onclick="googleLogin()">Login with Google</button>
+    <p id="loginMsg" style="color:#ffc800;"></p>
+  </div>
+
+  <!-- Admin Panel -->
+  <div class="admin-box" id="adminBox" style="display:none;">
+    <h2>Registered Users</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Email</th>
+          <th>UID</th>
+          <th>Last Login</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="usersTable">
+      </tbody>
+    </table>
+    <button onclick="logoutAdmin()">Logout</button>
+  </div>
+
+</div>
+
+<!-- Firebase -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, signOut, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-auth.js";
+import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-firestore.js";
+
+// Firebase Config
+const firebaseConfig = {
+  apiKey: "AIzaSyDB42zzsh2o95pt7L4zr5ReS6Z6suKhEG0",
+  authDomain: "yasser-tech-movies.firebaseapp.com",
+  projectId: "yasser-tech-movies",
+  storageBucket: "yasser-tech-movies.appspot.com",
+  messagingSenderId: "977935323619",
+  appId: "1:977935323619:web:ed94169e00cb340f4c90d6",
+  measurementId: "G-VPNMSYPTPV"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const provider = new GoogleAuthProvider();
+
+// Login Admin
+function loginAdmin(){
+  const email = document.getElementById('adminEmail').value;
+  const pass = document.getElementById('adminPassword').value;
+  signInWithEmailAndPassword(auth,email,pass)
+    .then(userCred=>{
+      document.getElementById('loginMsg').innerText='Login successful!';
+    })
+    .catch(err=>{
+      document.getElementById('loginMsg').innerText = err.message;
+    });
+}
+
+// Google Login
+function googleLogin(){
+  signInWithPopup(auth, provider)
+    .then(result=>{
+      document.getElementById('loginMsg').innerText='Login successful!';
+    })
+    .catch(err=>{
+      document.getElementById('loginMsg').innerText = err.message;
+    });
+}
+
+// Logout
+function logoutAdmin(){
+  signOut(auth).then(()=>{
+    document.getElementById('adminBox').style.display='none';
+    document.getElementById('loginBox').style.display='block';
+  });
+}
+
+// Load Users
+async function loadUsers(){
+  const usersTable = document.getElementById('usersTable');
+  usersTable.innerHTML = '<tr><td colspan="4">Loading...</td></tr>';
+
+  try{
+    const usersSnapshot = await getDocs(collection(db,'users')); // Assume 'users' collection stores registered users
+    usersTable.innerHTML='';
+    usersSnapshot.forEach(doc=>{
+      const data = doc.data();
+      const uid = doc.id;
+      usersTable.innerHTML += `<tr>
+        <td>${data.email}</td>
+        <td>${uid}</td>
+        <td>${data.lastLogin || '-'}</td>
+        <td><a href="#" onclick="alert('Delete function not implemented')">Delete</a></td>
+      </tr>`;
+    });
+  }catch(err){console.error(err);}
+}
+
+// Monitor Auth State
+onAuthStateChanged(auth,user=>{
+  if(user){
+    document.getElementById('loginBox').style.display='none';
+    document.getElementById('adminBox').style.display='block';
+    loadUsers();
+  }else{
+    document.getElementById('loginBox').style.display='block';
+    document.getElementById('adminBox').style.display='none';
+  }
+});
+</script>
+
+</body>
+</html>
